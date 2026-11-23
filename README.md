@@ -1,0 +1,83 @@
+# Break My API
+
+**Decision date:** 2026-11-23  
+**Status:** P1.3 interactive Playground implemented. Next milestone: P1.4 bounded autoscaling.  
+**Project:** A safe, **bilingual (English/Spanish)** educational API overload *simulation* for a professional engineering portfolio.
+
+## Run locally
+
+Use Node.js 24 LTS (validated with 24.21.0) and npm.
+
+```bash
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite. The EN/ES selector switches the entire shell;
+Open Playground to select a scenario and start its local simulation. There are no real API targets or traffic requests.
+
+```bash
+npm run typecheck
+npm run lint
+npm test -- --run
+npm run build
+```
+
+`npm run preview` serves the static production build. No deployment has been configured.
+See [the milestone handoff](docs/11-P1.1-P1.2-HANDOFF.md) for the foundation architecture, engine usage,
+assumptions, changed paths, validation evidence and limitations. The installed toolchain is
+locked in `package-lock.json`; React/React DOM are the only runtime dependencies.
+
+## Owner-approved decisions
+
+| ID | Area | Approved outcome |
+|---|---|---|
+| Q1 | Audience | Beginners **and** experienced developers equally |
+| Q2 | Languages | English **and** Spanish at MVP launch |
+| Q3 | Education | Three-step guided tour + contextual, inline explanations |
+| Q4 | Traffic | Entirely synthetic and local in the browser, no real load |
+| Q5 | Mechanisms | Queue, capacity, cache, rate limit **and autoscaling** in MVP |
+| Q6 | Visual | Friendly educational design with **minimalist** composition |
+| Q7 | Value | Equally strong learning experience and technical portfolio |
+
+## Read in this order
+
+1. `docs/01-PRODUCT-VISION.md` — goals, audience, positioning, boundaries.
+2. `docs/02-REQUIREMENTS.md` — stories, functional and nonfunctional scope.
+3. `docs/03-EDUCATIONAL-EXPERIENCE.md` — bilingual guided tour, contextual teaching and levels.
+4. `docs/04-TERMINOLOGY-AND-CLOUD-MAPPING.md` — universal vocabulary, cloud analogies.
+5. `docs/05-SIMULATION-ENGINE.md` — pipeline, deterministic metrics, model invariants.
+6. `docs/06-ARCHITECTURE.md` — stack, localization, design, file structure.
+7. `docs/07-IMPLEMENTATION-PLAN.md` — small milestones (P1.1–P1.6), with autoscaling scoped at P1.4.
+8. `docs/08-DECISIONS-AND-INTERVIEW.md` — recorded and approved answers.
+9. `docs/09-TESTING-AND-ACCEPTANCE.md` — proof of correctness and localization tests.
+10. `docs/10-LOCALIZATION-AND-DESIGN.md` — visual identity, i18n contract and bilingual UX.
+11. `AGENTS.md` — Codex instructions; authoritative scope and review protocol.
+12. `CODEX_START_PROMPT.md` — first scoped Codex run (P1.1 and P1.2 only).
+
+## MVP at a glance
+
+- One fictional endpoint: `GET /api/products`, with transparent synthetic request/response examples.
+- A deterministic, browser-only TypeScript engine; **no backend, database or authentication**.
+- Incoming RPS, processing time, instances, concurrency slots, bounded FIFO queue, eligible-GET cache, token-bucket rate limiting.
+- **Simple autoscaling:** bounded +1 scale-out when sustained overload occurs, provisioning delay, cooldown, and conservative scale-in when idle; model behavior must be labeled and tested.
+- Guided Tour (3 steps), Playground, inline glossary and rule-driven “Why?” explanations.
+- **English and Spanish shipped together**, using centralized typed localization dictionaries and a language switcher.
+- **Simple / Technical** explanation depth on the same screen, not separate applications.
+- Educational/minimalist aesthetic: friendly light foundation, intentional accent colors, responsive charts, not a dark sysadmin console by default.
+- Vite + React + strict TypeScript, Vitest, Testing Library, Recharts (or lightweight equivalent), CSS/CSS Modules, static Cloudflare Pages deployment.
+- No real traffic to test endpoints, no arbitrary URLs or target scanning.
+
+## Product invariant
+
+**Every control maps to a documented rule; all displayed metrics come from simulation events.** The model is a teaching tool, not a cloud capacity prediction or production benchmark.
+
+## Continue Phase 1
+
+The Playground advances by 250 simulated milliseconds per visible callback. Hidden
+callbacks are skipped. Pause freezes the model, and Resume continues from that point.
+Reset and scenario selection restore the selected preset and seed and leave it ready
+to start. Live control edits preserve accepted work. Each plot point represents a
+completed simulated second. Expand the chart data table to inspect all retained points.
+
+Next: P1.4 only, following the policy in docs/05-SIMULATION-ENGINE.md.
