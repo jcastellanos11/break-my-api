@@ -1,3 +1,4 @@
+import { initialScaling, observeIdle, evaluate, recordScale } from './autoscaling';
 import { assertConfig } from './config';
 import { createBucket, emptyCounters, EVENT_LIMIT, HISTORY_LIMIT } from './metrics';
 import { nextRandom } from './random';
@@ -10,7 +11,7 @@ const timestamp = (ms: number): number => Math.round(ms * 1e6) / 1e6;
 export function createSimulation(config: SimulationConfig): SimulationState {
   assertConfig(config);
   return {
-    config: { ...config }, nowMs: 0, randomState: config.seed,
+    scaling: { ...initialScaling(0, 0), idleSince: config.autoScalingEnabled ? 0 : null }, config: { ...config }, nowMs: 0, randomState: config.seed,
     nextArrivalAtMs: timestamp(1000 / config.incomingRps), arrivalEpochMs: 0, arrivalIndex: 1,
     nextRequestId: 1, effectiveInstanceCount: config.instanceCount,
     limiter: { tokens: config.rateLimitRps, refilledAtMs: 0 },
@@ -22,7 +23,7 @@ export const resetSimulation = createSimulation;
 
 function draft(state: SimulationState) {
   return {
-    ...state, config: { ...state.config }, limiter: { ...state.limiter },
+    ...state, scaling: { ...state.scaling }, config: { ...state.config }, limiter: { ...state.limiter },
     counters: { ...state.counters }, waiting: [...state.waiting],
     processing: [...state.processing], cachePending: [...state.cachePending],
     currentBucket: { ...state.currentBucket, latenciesMs: [...state.currentBucket.latenciesMs], queueWaitsMs: [...state.currentBucket.queueWaitsMs] },
@@ -45,8 +46,23 @@ function startOrigin(state: Draft, request: RequestRecord) {
   state.currentBucket.queueWaitsMs.push(queueWaitMs);
   emit(state, request.id, 'origin_start', { queueWaitMs });
 }
+function admissionSlots(state: Draft) {
+  const instances = state.scaling.returning ? state.config.instanceCount : state.effectiveInstanceCount;
+  return instances * state.config.concurrencyPerInstance;
+}
+function updateIdle(state: Draft, rejected = false) {
+  if (state.config.autoScalingEnabled) observeIdle(state.scaling, state.nowMs, !state.waiting.length,
+    state.processing.length, admissionSlots(state), rejected);
+}
+function finishReturn(state: Draft) {
+  if (state.scaling.returning && state.processing.length <= admissionSlots(state)) {
+    state.effectiveInstanceCount = state.config.instanceCount;
+    state.scaling.returning = false;
+    recordScale(state.scaling, state.nowMs, 'manualReturn', state.effectiveInstanceCount);
+  }
+}
 function fillSlots(state: Draft) {
-  const slots = state.effectiveInstanceCount * state.config.concurrencyPerInstance;
+  const slots = admissionSlots(state);
   while (state.waiting.length && state.processing.length < slots) {
     const request = state.waiting.shift();
     if (request) startOrigin(state, request);
@@ -83,7 +99,7 @@ function arrive(state: Draft) {
       return;
     }
   }
-  if (state.processing.length < state.effectiveInstanceCount * state.config.concurrencyPerInstance) {
+  if (state.processing.length < admissionSlots(state)) {
     startOrigin(state, request);
   } else if (state.waiting.length < state.config.maxQueueSize) {
     state.waiting.push(request);
@@ -104,7 +120,8 @@ export function advanceSimulation(state: SimulationState, deltaMs: number): Simu
   const target = timestamp(state.nowMs + deltaMs);
   while (true) {
     const completionAt = Math.min(...next.processing.map((r) => r.finishAtMs), ...next.cachePending.map((r) => r.finishAtMs));
-    const at = Math.min(next.nextArrivalAtMs, completionAt, next.currentBucket.endMs);
+    const at = Math.min(next.nextArrivalAtMs, completionAt, next.currentBucket.endMs,
+      next.config.autoScalingEnabled ? next.scaling.evaluationAt : Infinity, next.scaling.readyAt ?? Infinity);
     if (at > target) break;
     next.nowMs = at;
     // Half-open buckets [start, end): boundary events belong to the next bucket.
@@ -123,12 +140,26 @@ export function advanceSimulation(state: SimulationState, deltaMs: number): Simu
     for (const item of [...originDone.map((request) => ({ request, source: 'origin' as const })), ...cacheDone.map((request) => ({ request, source: 'cache' as const }))].sort((a, b) => a.request.id - b.request.id)) {
       complete(next, item.request, item.source);
     }
+    const scaling = next.scaling;
+    const config = next.config;
+    if (scaling.readyAt === at) {
+      next.effectiveInstanceCount++;
+      scaling.readyAt = null;
+      recordScale(scaling, at, 'activated', next.effectiveInstanceCount);
+    }
+    if (config.autoScalingEnabled && scaling.evaluationAt === at) {
+      next.effectiveInstanceCount = evaluate(scaling, at, next.waiting.length, next.counters.rejected503,
+        next.processing.length, next.effectiveInstanceCount, config.concurrencyPerInstance, config.instanceCount, config.maxInstances);
+    }
+    finishReturn(next);
     fillSlots(next);
+    const priorRejected = next.counters.rejected503;
     if (next.nextArrivalAtMs === at) {
       arrive(next);
       next.arrivalIndex++;
       next.nextArrivalAtMs = timestamp(next.arrivalEpochMs + next.arrivalIndex * 1000 / next.config.incomingRps);
     }
+    updateIdle(next, next.counters.rejected503 !== priorRejected);
   }
   next.nowMs = target;
   next.currentBucket.queueDepth = next.waiting.length;
@@ -155,15 +186,25 @@ export function configureSimulation(state: SimulationState, config: SimulationCo
     refilledAtMs: state.nowMs,
   };
   next.config = { ...config };
-  next.effectiveInstanceCount = config.instanceCount;
+  if (config.autoScalingEnabled !== state.config.autoScalingEnabled) {
+    next.scaling = { ...initialScaling(state.nowMs, state.counters.rejected503), events: state.scaling.events };
+    if (state.scaling.readyAt !== null) recordScale(next.scaling, state.nowMs, 'cancelled', state.effectiveInstanceCount);
+    next.scaling.returning = !config.autoScalingEnabled && state.effectiveInstanceCount > config.instanceCount;
+  }
+  if (config.autoScalingEnabled && (config.instanceCount !== state.config.instanceCount || config.maxInstances !== state.config.maxInstances))
+    throw new RangeError('Change scaling bounds with automatic scaling disabled');
+  if (!config.autoScalingEnabled && !next.scaling.returning) next.effectiveInstanceCount = config.instanceCount;
+  finishReturn(next);
   fillSlots(next);
+  updateIdle(next);
   return next;
 }
 
-/** Future policy can call this at an event timestamp; no policy exists in P1.2.
+/** Manual capacity override for fixed-capacity experiments.
  * A lower target retains in-flight work and blocks new starts until slots free.
  */
 export function setActiveInstanceCount(state: SimulationState, count: number): SimulationState {
+  if (state.config.autoScalingEnabled) throw new RangeError('Automatic scaling controls active capacity');
   if (!Number.isInteger(count) || count < 1 || count > state.config.maxInstances) throw new RangeError('Invalid active instance count');
   const next = draft(state);
   next.effectiveInstanceCount = count;

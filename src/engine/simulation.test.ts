@@ -39,8 +39,8 @@ describe('configuration and boundaries', () => {
     expect(validateConfig(config(patch)).length).toBeGreaterThan(0);
     expect(() => createSimulation(config(patch))).toThrow(RangeError);
   });
-  it('rejects deferred autoscaling and noncanonical cache delay even at the runtime boundary', () => {
-    expect(validateConfig({ ...config(), autoScalingEnabled: true } as unknown as SimulationConfig)).toContainEqual({ field: 'autoScalingEnabled', code: 'deferred' });
+  it('rejects invalid autoscaling flags and noncanonical cache delay even at the runtime boundary', () => {
+    expect(validateConfig({ ...config(), autoScalingEnabled: 1 } as unknown as SimulationConfig)).toContainEqual({ field: 'autoScalingEnabled', code: 'boolean' });
     expect(validateConfig({ ...config(), cacheResponseTimeMs: 0 } as unknown as SimulationConfig)).toContainEqual({ field: 'cacheResponseTimeMs', code: 'fixed' });
   });
   it('accepts the maximum workload without exceeding bounded queue and processing capacity', () => {

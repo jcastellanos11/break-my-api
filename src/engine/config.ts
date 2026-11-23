@@ -1,6 +1,6 @@
 import type { SimulationConfig } from './types';
 
-export type ConfigIssue = { readonly field: keyof SimulationConfig; readonly code: 'range' | 'integer' | 'boolean' | 'fixed' | 'deferred' };
+export type ConfigIssue = { readonly field: keyof SimulationConfig; readonly code: 'range' | 'integer' | 'boolean' | 'fixed' };
 
 /** Structured errors are ready for localization by the future controls. */
 export function validateConfig(config: SimulationConfig): ConfigIssue[] {
@@ -19,11 +19,10 @@ export function validateConfig(config: SimulationConfig): ConfigIssue[] {
   if (!Number.isFinite(config.configuredCacheHitRate) || config.configuredCacheHitRate < 0 || config.configuredCacheHitRate > 1) {
     issues.push({ field: 'configuredCacheHitRate', code: 'range' });
   }
-  for (const field of ['cacheEnabled', 'rateLimitEnabled'] as const) {
+  for (const field of ['cacheEnabled', 'rateLimitEnabled', 'autoScalingEnabled'] as const) {
     if (typeof config[field] !== 'boolean') issues.push({ field, code: 'boolean' });
   }
   if (config.cacheResponseTimeMs !== 10) issues.push({ field: 'cacheResponseTimeMs', code: 'fixed' });
-  if (config.autoScalingEnabled !== false) issues.push({ field: 'autoScalingEnabled', code: 'deferred' });
   return issues;
 }
 

@@ -1,6 +1,20 @@
 import type { Messages } from './types';
 
 export const es = {
+  autoScaleRecovery: "Recuperación con escalamiento automático",
+  autoScaling: "Escalamiento automático",
+  scalePolicy: "Cada segundo simulado se comprueba si hay solicitudes en cola o respuestas HTTP 503. Dos ventanas consecutivas con presión activan la preparación de una instancia. Tarda 2 s en estar disponible. Entre decisiones pasan al menos 5 s. Los picos breves aún pueden causar rechazos.",
+  idlePolicy: "Sin instancias en preparación, se puede retirar una tras 10 s con la cola vacía, sin HTTP 503 y con un máximo del 25 % de los espacios ocupados, si el trabajo en curso cabe en los espacios restantes.",
+  bounds: "Instancias mínimas / máximas",
+  pending: "Instancias en preparación",
+  scaleEvents: "Eventos recientes de escalamiento",
+  noScaleEvents: "Aún no hay eventos de escalamiento en este escenario.",
+  scheduled: "Presión sostenida · se solicita una instancia",
+  activated: "Preparación completa · instancia activa",
+  removed: "Demanda baja · se retira una instancia",
+  cancelled: "Escalamiento desactivado · preparación cancelada",
+  manualReturn: "Capacidad manual restablecida al caber el trabajo activo",
+  activeInstances: "Instancias activas",
   ready: "Listo",
   running: "En marcha",
   paused: "En pausa",

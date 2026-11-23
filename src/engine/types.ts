@@ -1,3 +1,4 @@
+import type { initialScaling } from './autoscaling';
 /** Domain types contain codes, never localized presentation strings. */
 export interface SimulationConfig {
   readonly incomingRps: number;
@@ -11,8 +12,7 @@ export interface SimulationConfig {
   readonly cacheResponseTimeMs: 10;
   readonly rateLimitEnabled: boolean;
   readonly rateLimitRps: number;
-  /** P1.4 reserved: enabling is explicitly rejected until implemented. */
-  readonly autoScalingEnabled: false;
+  readonly autoScalingEnabled: boolean;
   readonly maxInstances: number;
   readonly seed: number;
 }
@@ -52,6 +52,7 @@ export interface MetricBucket extends Counters {
   queueDepth: number;
 }
 export interface SimulationState {
+  readonly scaling: ReturnType<typeof initialScaling>;
   readonly config: SimulationConfig;
   readonly nowMs: number;
   readonly randomState: number;

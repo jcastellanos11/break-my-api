@@ -8,8 +8,9 @@ const base: SimulationConfig = {
   maxInstances: 8, seed: 42,
 };
 
-/** Auto Scale Recovery is intentionally added with its policy in P1.4. */
+
 export const presets = {
+  autoScaleRecovery: { ...base, incomingRps: 40, instanceCount: 1, concurrencyPerInstance: 3, processingTimeMs: 250, maxQueueSize: 50, autoScalingEnabled: true },
   healthy: { ...base },
   trafficSpike: { ...base, incomingRps: 120, instanceCount: 1, concurrencyPerInstance: 3, processingTimeMs: 250, maxQueueSize: 50 },
   cacheRescue: { ...base, incomingRps: 120, instanceCount: 1, concurrencyPerInstance: 3, processingTimeMs: 250, maxQueueSize: 50, cacheEnabled: true },

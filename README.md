@@ -1,7 +1,7 @@
 # Break My API
 
 **Decision date:** 2026-11-23  
-**Status:** P1.3 interactive Playground implemented. Next milestone: P1.4 bounded autoscaling.  
+**Status:** P1.4 bounded autoscaling implemented. Next milestone: P1.5 educational experience.  
 **Project:** A safe, **bilingual (English/Spanish)** educational API overload *simulation* for a professional engineering portfolio.
 
 ## Run locally
@@ -80,4 +80,13 @@ Reset and scenario selection restore the selected preset and seed and leave it r
 to start. Live control edits preserve accepted work. Each plot point represents a
 completed simulated second. Expand the chart data table to inspect all retained points.
 
-Next: P1.4 only, following the policy in docs/05-SIMULATION-ENGINE.md.
+Auto Scale Recovery starts at 40 RPS with one three-slot instance. Each full simulated
+second after enabling scaling counts as a pressure window if it ends with queued
+requests or contains a 503. Two consecutive windows schedule one launch. It becomes
+usable two seconds later. Decisions are separated by at least five seconds. The
+idle clock tracks actual events, including intervening utilization peaks, and requires
+ten continuous seconds at or below 25% utilization with no waiting, overflow, or
+pending launch. Disabling scaling drains extra busy capacity toward the manual count.
+The disclosure retains the most recent 60 scaling events.
+
+Next milestone: P1.5 guided learning and explanation depth.

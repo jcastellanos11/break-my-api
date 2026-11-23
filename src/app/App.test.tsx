@@ -103,4 +103,29 @@ describe('bilingual foundation shell', () => {
       expect(vi.getTimerCount()).toBe(0);
     }
   });
+  it('freezes a pending launch, localizes its events and clears it on reset or scenario change', () => {
+    vi.useFakeTimers();
+    render(<I18nProvider><App /></I18nProvider>);
+    fireEvent.change(screen.getByLabelText(en.scenario), {target:{value:'autoScaleRecovery'}});
+    const click = (name:string) => fireEvent.click(screen.getByRole('button',{name}));
+    click(en.play);
+    act(()=>vi.advanceTimersByTime(2000));
+    click(en.pause);
+    click('Español');
+    const pending = () => screen.getByText(es.pending,{selector:'dt'}).nextElementSibling;
+    expect(screen.getByLabelText(es.instanceCount)).toBeDisabled();
+    act(()=>vi.advanceTimersByTime(8000));
+    expect(pending()).toHaveTextContent('1');
+    click(es.resume);
+    act(()=>vi.advanceTimersByTime(2000));
+    expect(pending()).toHaveTextContent('0');
+    expect(screen.getByText(new RegExp(es.activated))).toBeInTheDocument();
+    click(es.reset);
+    expect(screen.getByText(es.noScaleEvents)).toBeInTheDocument();
+    click(es.play);
+    act(()=>vi.advanceTimersByTime(2000));
+    fireEvent.change(screen.getByLabelText(es.scenario),{target:{value:'healthy'}});
+    expect(pending()).toHaveTextContent('0');
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
