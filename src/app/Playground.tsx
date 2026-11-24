@@ -3,6 +3,7 @@ import { getSimulationSnapshot, presets } from '../engine';
 import type { PresetId } from '../engine';
 import { useI18n } from '../i18n/context';
 import { useSimulation } from './useSimulation';
+import { Learning } from './Learning';
 import { Plots } from './Plots';
 
 const ranges = [
@@ -22,10 +23,11 @@ export function Playground() {
   return <section id="experiment" className="experiment lab" tabIndex={-1} aria-labelledby="experiment-title">
     <div className="section-heading"><h2 id="experiment-title">{t.experiment}</h2><span className="status-pill">{t.simulated}</span></div>
     <div className="toolbar"><label>{t.scenario} <select value={preset} onChange={e=>dispatch({type:'select',preset:e.target.value as PresetId})}>{(Object.keys(presets) as PresetId[]).map(k=><option key={k} value={k}>{t[k]}</option>)}</select></label>
-    <button onClick={()=>dispatch({type:'toggle'})}>{t[status==='running'?'pause':status==='paused'?'resume':'play']}</button><button onClick={()=>dispatch({type:'reset'})}>{t.reset}</button>
+    <button id="run-controls" onClick={()=>dispatch({type:'toggle'})}>{t[status==='running'?'pause':status==='paused'?'resume':'play']}</button><button onClick={()=>dispatch({type:'reset'})}>{t.reset}</button>
     <span role="status">{t[preset]} · {t[status]}</span><span>{t.clock} · {seconds} s</span></div>
     <p>{t.restartHelp} {t.clockHelp}</p>
-    <div className="lab-grid"><section className="settings"><h3>{t.configTitle}</h3><p>{t.editHelp}</p>
+    <Learning model={model} snapshot={snap} applySpike={()=>dispatch({type:'select',preset:'trafficSpike'})}/>
+    <div className="lab-grid"><section className="settings" id="capacity-controls" tabIndex={-1}><h3>{t.configTitle}</h3><p>{t.editHelp}</p>
     <label className="check"><input type="checkbox" checked={config.autoScalingEnabled}
       onChange={e=>dispatch({type:'edit',patch:{autoScalingEnabled:e.target.checked}})}/>{t.autoScaling}</label>
     {config.autoScalingEnabled && <p>{t.scalePolicy} {t.idlePolicy}</p>}

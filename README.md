@@ -1,7 +1,7 @@
 # Break My API
 
 **Decision date:** 2026-11-23  
-**Status:** P1.4 bounded autoscaling implemented. Next milestone: P1.5 educational experience.  
+**Status:** P1.5 bilingual tour, glossary and contextual explanations implemented.  
 **Project:** A safe, **bilingual (English/Spanish)** educational API overload *simulation* for a professional engineering portfolio.
 
 ## Run locally
@@ -89,4 +89,6 @@ ten continuous seconds at or below 25% utilization with no waiting, overflow, or
 pending launch. Disabling scaling drains extra busy capacity toward the manual count.
 The disclosure retains the most recent 60 scaling events.
 
-Next milestone: P1.5 guided learning and explanation depth.
+Open Guided Tour in the Playground for three optional lessons. The sample exchange is illustrative. Only the explicitly labeled preset reset changes experiment state. Simple and Technical share the same run.
+
+Next milestone: P1.6 QA and release preparation.
