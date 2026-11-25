@@ -6,12 +6,12 @@ const topics = {
   processingTimeMs: 'service', maxQueueSize: 'queue', cacheEnabled: 'cache',
   configuredCacheHitRate: 'hit', rateLimitEnabled: 'limit', rateLimitRps: 'limit',
   autoScaling: 'auto', effective: 'instance', activeInstances: 'instance', bounds: 'auto',
-  pending: 'delay', throughput: 'throughput', waiting: 'queue', latency: 'p95',
+  admissionSlots: 'slots', pending: 'delay', throughput: 'throughput', waiting: 'queue', latency: 'p95',
   completed200: 'status', rejected429: 'reject', rejected503: 'overflow', active: 'slots', cacheHits: 'hit',
 } as const;
 export type HelpKey = keyof typeof topics;
 
-export function Help({field, adjustable = false}: {field: HelpKey; adjustable?: boolean}) {
+export function Help({field, adjustable = false, context}: {field: HelpKey; adjustable?: boolean; context?: string}) {
   const {t, technical} = useI18n();
   const topic = topics[field];
   const id = useId();
@@ -41,7 +41,7 @@ export function Help({field, adjustable = false}: {field: HelpKey; adjustable?: 
     onKeyDown={event => { if (open && event.key === 'Escape') { event.preventDefault(); close(); } }}
     onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
     <button className="help-icon" ref={opener} type="button"
-      aria-label={[t.help,t[field],adjustable ? t.configTitle : t.current].join(' · ')}
+      aria-label={[t.help,t[field],context ?? (adjustable ? t.configTitle : t.current)].join(' · ')}
       aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(!open)}>?</button>
     {open && <span className="help-box" role="region" id={id} aria-label={t[field]}>
       <b>{t.meaning}</b><span>{meaning}</span>

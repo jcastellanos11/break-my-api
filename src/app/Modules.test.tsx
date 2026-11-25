@@ -21,6 +21,7 @@ afterEach(() => {
   cleanup();
   history.replaceState(null, '', '/');
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 it('opens shared status URLs and restores them through real browser History traversal', async () => {
@@ -153,4 +154,100 @@ it('opens help from the keyboard and dismisses it back to the same control', asy
   await user.keyboard('{Escape}');
   expect(help).toHaveFocus();
   expect(help).toHaveAttribute('aria-expanded','false');
+});
+
+function phoneExplorer(path: string) {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.startsWith('(max-width'), addEventListener: vi.fn(), removeEventListener: vi.fn(),
+  }));
+  open(path);
+}
+
+it('opens one phone detail and returns keyboard focus to the filtered Spanish result', async () => {
+  phoneExplorer('/learn/http-status');
+  fireEvent.click(screen.getByRole('button', { name: 'Español' }));
+  const search = screen.getByRole('searchbox');
+  fireEvent.change(search, { target: { value: '429' } });
+  fireEvent.change(screen.getByLabelText(es.family), { target: { value: '4' } });
+  const result = screen.getByRole('link', { name: /^429 / });
+  result.focus();
+  await userEvent.setup().keyboard('{Enter}');
+  expect(screen.getByRole('heading', { name: /^429 ·/ })).toHaveFocus();
+  expect(screen.queryByRole('searchbox')).toBeNull();
+  expect(screen.getByText(es.simBadge)).toBeVisible();
+  follow(es.backResults);
+  expect(result).toHaveFocus();
+  expect(search).toHaveValue('429');
+  expect(screen.getByLabelText(es.family)).toHaveValue('4');
+  expect(location.search).toBe('');
+});
+
+it('returns from a phone deep link with no prior catalog entry and traverses that visit', async () => {
+  phoneExplorer('/learn/http-status?code=503');
+  expect(screen.queryByRole('searchbox')).toBeNull();
+  follow(en.backResults);
+  expect(screen.getByRole('link', { name: /^503 / })).toHaveFocus();
+  history.back();
+  await waitFor(() => expect(screen.getByRole('heading', { name: /^503 ·/ })).toHaveFocus());
+  history.forward();
+  await waitFor(() => expect(screen.getByRole('link', { name: /^503 / })).toHaveFocus());
+});
+
+it('keeps an out-of-filter detail explicit and clears empty results without changing its URL', () => {
+  open('/learn/http-status?code=503');
+  const search = screen.getByRole('searchbox');
+  fireEvent.change(search, { target: { value: '429' } });
+  fireEvent.change(screen.getByLabelText(en.family), { target: { value: '4' } });
+  expect(screen.getByRole('link', { name: /^429 / })).toBeVisible();
+  expect(screen.queryByRole('link', { name: /^503 / })).toBeNull();
+  expect(screen.getByText(en.openDetail)).toBeVisible();
+  expect(screen.getByRole('heading', { name: /^503 ·/ })).toBeVisible();
+  expect(location.search).toBe('?code=503');
+  follow(en.backResults);
+  expect(search).toHaveFocus();
+  fireEvent.change(search, { target: { value: 'none123' } });
+  fireEvent.click(screen.getByRole('button', { name: en.clearFilters }));
+  expect(search).toHaveValue('');
+  expect(screen.getByLabelText(en.family)).toHaveValue('');
+  fireEvent.click(screen.getByRole('link', { name: /^304 / }));
+  expect(screen.getByText(en.refBadge)).toBeVisible();
+  const related = catalog.find(row => row.code === 304)!.related[0]!;
+  follow(String(related));
+  expect(location.search).toBe('?code='+related);
+});
+
+it('keeps the expanded glossary term through depth and locale changes and searches accented terms', async () => {
+  open('/learn/glossary');
+  const term = screen.getByRole('button', { name: en.defcacheTerm });
+  term.focus();
+  await userEvent.setup().keyboard('{Enter}');
+  expect(screen.getByText(en.defcacheSimple)).toBeVisible();
+  fireEvent.change(screen.getByRole('combobox', { name: en.depth }), { target: { value: 'technical' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Español' }));
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'cache' } });
+  expect(screen.getByRole('button', { name: es.defcacheTerm })).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByText(es.defcacheTech)).toBeVisible();
+  fireEvent.click(term);
+  expect(screen.getByText(es.defcacheTech)).not.toBeVisible();
+});
+
+it.each([en, es])('offers three labeled reading destinations and a fictional exchange before opening the lab', t => {
+  open('/learn');
+  if (t === es) fireEvent.click(screen.getByRole('button', { name: 'Español' }));
+  for (const [name, description, route] of [
+    [t.fundamentals, t.fundIntro, 'fundamentals'],
+    [t.explorer, t.statusIntro, 'http-status'],
+    [t.gloss, t.glossIntro, 'glossary'],
+  ] as const) {
+    const card = screen.getByRole('link', { name });
+    expect(card).toHaveAttribute('href', '/learn/' + route);
+    expect(card).toHaveTextContent(description);
+  }
+  follow(t.fundamentals);
+  expect(screen.getByRole('navigation', { name: t.outline })).toBeVisible();
+  const exchange = screen.getByRole('figure', { name: t.fiction });
+  expect(exchange).toHaveTextContent('GET /api/products');
+  expect(exchange).toHaveTextContent('200 OK');
+  follow(t.start);
+  expect(screen.getByRole('article', { name: t.awaitWindow })).toBeVisible();
 });

@@ -28,7 +28,10 @@ export function App() {
   const previous = useRef(route);
   useEffect(() => {
     if (previous.current === route) return;
+    const from = previous.current;
     previous.current = route;
+    // The explorer restores the matching row (or search) when closing its detail.
+    if (from.startsWith('/learn/http-status?code=') && route === '/learn/http-status') return;
     const heading = document.querySelector<HTMLElement>('[data-route-heading]') ?? document.getElementById('main');
     heading?.focus();
   }, [route]);
@@ -57,8 +60,7 @@ export function App() {
           <p className="hero-footnote">{t.heroNote}</p>
         </section>
         }
-        <div hidden={!lab}><aside className="safety-notice"><span className="safety-icon" aria-hidden="true">✓</span><div><strong>{t.simulated}</strong><p>{t.safety}</p></div><span className="benchmark">{t.benchmark}</span></aside>
-        <Playground standalone={path === "/playground"} /></div>
+        <div hidden={!lab}><Playground standalone={path === "/playground"} /></div>
         {!lab && <LearnCenter path={path ?? "/learn"} />}
 
       </main>

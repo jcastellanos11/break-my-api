@@ -1,58 +1,21 @@
+import { searchable } from './searchable';
 import { useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { terms } from './insights';
 import { statusPath } from './navigation';
-import { catalog, mdn, registry, simulatedCodes } from './statusCatalog';
+import { Explorer } from './Explorer';
 
-const familyKeys = ['f1', 'f2', 'f3', 'f4', 'f5'] as const;
-
-function searchable(text: string) {
-  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
-}
-
-function Explorer() {
-  const { t, locale } = useI18n();
-  const [query, setQuery] = useState('');
-  const [family, setFamily] = useState('');
-  const selection = new URLSearchParams(location.search).get('code');
-  const selected = catalog.find(row => String(row.code) === selection);
-  const matches = catalog.filter(row => {
-    if (!String(row.code).startsWith(family)) return false;
-    const keywords = [row.code, row.phrase, row.title[locale],
-      row.summary[locale], row.technical[locale], row.example[locale]];
-    return searchable(keywords.join(' ')).includes(searchable(query));
-  });
-
-  return <>
-    <p>{t.coverage}</p>
-    {selection && (selected ? <article className="reader detail">
-      <h2 tabIndex={-1} data-route-heading>{selected.code} · {selected.title[locale]}</h2>
-      <p><span lang="en">{selected.phrase}</span> · {Math.floor(selected.code / 100)}xx · {t[familyKeys[Math.floor(selected.code / 100) - 1]!]}</p>
-      <strong>{simulatedCodes.has(selected.code) ? t.simBadge : t.refBadge}</strong>
-      <p>{selected.summary[locale]}</p>
-      <h3>{t.technical}</h3><p>{selected.technical[locale]}</p>
-      <h3>{t.illustrated}</h3><p>{selected.example[locale]}</p>
-      <p>{t.related} · {selected.related.map(code => <a key={code} href={statusPath(code)}>{code} </a>)}</p>
-      <a href={registry}>IANA</a> · <a href={mdn + '/' + selected.code}>MDN · HTTP {selected.code}</a>
-    </article> : <p role="status">{t.missing}</p>)}
-    <div className="reader-controls">
-      <label>{t.search}<input type="search" value={query} onChange={event => setQuery(event.target.value)} /></label>
-      <label>{t.family}<select value={family} onChange={event => setFamily(event.target.value)}>
-        <option value="">{t.families}</option>
-        {familyKeys.map((key, i) => <option key={key} value={i + 1}>{i + 1}xx · {t[key]}</option>)}
-      </select></label>
-    </div>
-    <ul className="status-grid">{matches.map(row => <li key={row.code}>
-      <a href={statusPath(row.code)}><b>{row.code}</b> {row.title[locale]}</a>
-    </li>)}</ul>
-    {matches.length === 0 && <p role="status">{t.missing}</p>}
-    <p><a href={registry}>IANA</a> · <a href={mdn}>MDN</a></p>
-  </>;
-}
+const chapters = [['defapiTerm','fundRequest'], ['fundCapacityTitle','fundCapacity'], ['fundProtectTitle','fundProtect'], ['explorer','fundFamilies']] as const;
+const motifPaths = [
+  'M4 11h24v17H4z M4 11l12 9 12-9 M34 15h13m-13 6h9',
+  'M6 8h22v14H6z M12 14h8 M18 23v9h27V17H31 M24 26h13',
+  'M8 10h29v22H8z M14 5h29v21 M14 17h15m-15 6h9',
+];
 
 function Glossary() {
   const { t, technical, setTechnical, locale } = useI18n();
   const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
   const matches = terms.filter(term => searchable(t[`def${term}Term`]).includes(searchable(query)))
     .sort((a, b) => t[`def${a}Term`].localeCompare(t[`def${b}Term`], locale));
   return <>
@@ -64,11 +27,14 @@ function Glossary() {
       </select></label>
     </div>
     {matches.length === 0 && <p role="status">{t.missing}</p>}
-    {matches.map(term => <article className="reader" key={term}>
-      <h2>{t[`def${term}Term`]}</h2>
+    {matches.map(term => <article className="term-row" key={term}>
+      <h2><button type="button" aria-expanded={expanded === term} aria-controls={'term-'+term}
+        onClick={() => setExpanded(expanded === term ? null : term)}>{t[`def${term}Term`]}<span aria-hidden="true">{expanded === term ? '−' : '+'}</span></button></h2>
+      <div id={'term-'+term} hidden={expanded !== term}>
       <p>{t[`def${term}${technical ? 'Tech' : 'Simple'}`]}</p>
       {term === 'reject' && <a href={statusPath(429)}>HTTP 429</a>}
       {term === 'overflow' && <a href={statusPath(503)}>HTTP 503</a>}
+      </div>
     </article>)}
   </>;
 }
@@ -86,20 +52,27 @@ export function LearnCenter({ path }: { path: string }) {
   return <section className="learn-page">
     <h1 tabIndex={-1} data-route-heading={hasDetail ? undefined : true}>{title}</h1>
     {path === '/about' ? <>
-      <p>{t.aboutCopy}</p><p>{t.safety}</p>
+      <div className="reading-column"><h2>{t.modelScope}</h2><p>{t.aboutCopy}</p><p>{t.safety}</p></div>
       <a href="https://github.com/jcastellanos11/break-my-api">{t.repository}</a>
     </> : <>
       {path !== '/learn' && <nav aria-label={t.learn}>{pages.map(page =>
         <a key={page.path} href={page.path} aria-current={path === page.path ? 'page' : undefined}>{page.title}</a>)}</nav>}
       {path === '/learn/http-status' ? <Explorer /> : path === '/learn/glossary' ? <Glossary /> :
         path === '/learn/fundamentals' ? <>
-          {([['defapiTerm','fundRequest'], ['fundCapacityTitle','fundCapacity'], ['fundProtectTitle','fundProtect'], ['explorer','fundFamilies']] as const).map(([heading, body]) =>
-            <article className="reader" key={body}><h2>{t[heading]}</h2><p>{t[body]}</p></article>)}
+          <nav className="outline" aria-label={t.outline}>{chapters.map(([heading, body]) =>
+            <a href={'#'+body} key={body}>{t[heading]}</a>)}</nav>
+          <div className="reading-column">{chapters.map(([heading, body]) =>
+            <section key={body} id={body} tabIndex={-1}><h2>{t[heading]}</h2><p>{t[body]}</p>
+              {body === 'fundRequest' && <figure className="exchange" aria-labelledby="exchange-caption"><figcaption id="exchange-caption">{t.fiction}</figcaption>
+                <dl><dt>{t.request}</dt><dd><code>GET /api/products</code></dd>
+                <dt>{t.response}</dt><dd><code>200 OK<br/>{t.json}</code></dd></dl></figure>}
+            </section>)}</div>
           <a href="/playground">{t.start}</a>
         </> : <>
-          <p>{t.learnIntro}</p><div className="learn-index">{pages.map(page =>
+          <p>{t.learnIntro}</p><div className="learn-index">{pages.map((page, index) =>
             <a key={page.path} href={page.path} aria-label={page.title}>
-              <h2>{page.title}</h2><p>{page.summary}</p>
+              <svg aria-hidden="true" viewBox="0 0 52 38" className={'card-motif motif-'+index}><path d={motifPaths[index]} /></svg>
+              <h2>{page.title} <span aria-hidden="true">↗</span></h2><p>{page.summary}</p>
             </a>)}</div>
         </>}
     </>}

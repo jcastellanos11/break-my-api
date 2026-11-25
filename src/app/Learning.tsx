@@ -8,9 +8,10 @@ interface Props {
   model: SimulationState;
   snapshot: SimulationSnapshot;
   applySpike: () => void;
+  revealProtection?: () => void;
 }
 
-export function Learning({ model, snapshot, applySpike }: Props) {
+export function Learning({ model, snapshot, applySpike, revealProtection }: Props) {
   const { t, locale, technical, setTechnical } = useI18n();
   const [step, setStep] = useState(0);
   const [sent, setSent] = useState(false);
@@ -62,7 +63,7 @@ export function Learning({ model, snapshot, applySpike }: Props) {
         <p>{t.active}: {snapshot.processing} / {snapshot.slots} · {t.waiting}: {snapshot.waiting}</p>
       </>}
       {step===3 && <>
-        <p>{technical?t.protectTech:t.protectSimple}</p><a href="#capacity-controls">{t.tryControls}</a>
+        <p>{technical?t.protectTech:t.protectSimple}</p><a href="#capacity-controls" onClick={event => { if (revealProtection) { event.preventDefault(); revealProtection(); } }}>{t.tryControls}</a>
         <p>{t.activeInstances}: {snapshot.effectiveInstanceCount} · {t.pending}: {Number(model.scaling.readyAt!==null)}</p>
         {model.scaling.events.at(-1) && <p>{t.scaleEvents} · {model.scaling.events.at(-1)!.atMs/1000} s · {t[model.scaling.events.at(-1)!.kind]}</p>}
       </>}
