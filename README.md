@@ -1,7 +1,7 @@
 # Break My API
 
 **Decision date:** 2026-11-23  
-**Status:** P1.5 bilingual tour, glossary and contextual explanations implemented.  
+**Status:** P1.5.1 modular navigation, bilingual learning center and contextual help implemented.
 **Project:** A safe, **bilingual (English/Spanish)** educational API overload *simulation* for a professional engineering portfolio.
 
 ## Run locally
@@ -91,4 +91,12 @@ The disclosure retains the most recent 60 scaling events.
 
 Open Guided Tour in the Playground for three optional lessons. The sample exchange is illustrative. Only the explicitly labeled preset reset changes experiment state. Simple and Technical share the same run.
 
-Next milestone: P1.6 QA and release preparation.
+The animated request flow visualizer is scheduled separately for P1.5.2.
+
+## Learning center and navigation
+
+The welcome screen at `/` and the dedicated `/playground` share one in-memory experiment. The Learn index at `/learn` links to `/learn/fundamentals`, `/learn/http-status` and `/learn/glossary`. The About page is at `/about`. Share a code with a URL such as `/learn/http-status?code=429`.
+
+Navigation uses the browser History API. The Playground stays mounted while other modules are visible, so the controller retains its model, clock, queue and pending launches. A reload starts a fresh session. Cloudflare Pages route rewrites are in `public/_redirects`; other static servers must serve `index.html` for the application routes.
+
+The bilingual catalog was checked on 2026-11-24 against the [IANA registry](https://www.iana.org/assignments/http-status-codes) and [MDN HTTP reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status). It covers 58 entries. It omits unassigned values, historical 102, temporary 104, reserved 402, deprecated 305 and 510, and unused 306. The required 418 entry explains its unused registration. Only 200, 429 and 503 are engine outcomes. Catalog examples run no requests.

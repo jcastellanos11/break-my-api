@@ -11,8 +11,7 @@ interface Props {
 }
 
 export function Learning({ model, snapshot, applySpike }: Props) {
-  const { t, locale } = useI18n();
-  const [technical, setTechnical] = useState(false);
+  const { t, locale, technical, setTechnical } = useI18n();
   const [step, setStep] = useState(0);
   const [sent, setSent] = useState(false);
   const [term, setTerm] = useState<Term>('api');

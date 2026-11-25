@@ -2,6 +2,8 @@ import { createContext, useContext } from 'react';
 import type { Locale, Messages } from './types';
 
 export interface I18nContextValue {
+  technical: boolean;
+  setTechnical: (value: boolean) => void;
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: Messages;

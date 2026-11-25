@@ -1,3 +1,6 @@
+import { useEffect, useRef } from 'react';
+import { useRoute, navigate } from './navigation';
+import { LearnCenter } from './LearnCenter';
 import { Playground } from './Playground';
 import { useI18n } from '../i18n/context';
 
@@ -19,20 +22,30 @@ function Journey() {
 }
 
 export function App() {
+  const route = useRoute();
+  const path = route.split('?')[0];
+  const lab = path === '/' || path === '/playground';
+  const previous = useRef(route);
+  useEffect(() => {
+    if (previous.current === route) return;
+    previous.current = route;
+    const heading = document.querySelector<HTMLElement>('[data-route-heading]') ?? document.getElementById('main');
+    heading?.focus();
+  }, [route]);
   const { locale, setLocale, t } = useI18n();
   return (
-    <>
+    <div onClick={navigate}>
       <a className="skip-link" href="#main">{t.skip}</a>
       <header className="site-header wrap">
-        <a className="brand" href="#main"><span className="brand-mark" aria-hidden="true">↗</span>{t.brand}<span className="brand-dot" aria-hidden="true">.</span></a>
-        <nav aria-label={t.navigation}><a href="#main">{t.overview}</a><a href="#experiment">{t.experiment}</a></nav>
+        <a className="brand" href="/"><span className="brand-mark" aria-hidden="true">↗</span>{t.brand}<span className="brand-dot" aria-hidden="true">.</span></a>
+        <nav aria-label={t.navigation}><a href="/playground" aria-current={lab?"page":undefined}>{t.experiment}</a><a href="/learn" aria-current={path?.startsWith("/learn")?"page":undefined}>{t.learn}</a><a href="/about" aria-current={path==="/about"?"page":undefined}>{t.about}</a></nav>
         <div className="language-switch" role="group" aria-label={t.language}>
           <button lang="en" aria-label={t.english} aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button>
           <button lang="es" aria-label={t.spanish} aria-pressed={locale === 'es'} onClick={() => setLocale('es')}>ES</button>
         </div>
       </header>
       <main id="main" className="wrap" tabIndex={-1}>
-        <section className="hero" aria-labelledby="hero-title">
+        {path === "/" && <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
             <p className="eyebrow"><span aria-hidden="true">✳</span>{t.badge}</p>
             <h1 id="hero-title">{t.headline}<br /><span>{t.headlineAccent}</span></h1>
@@ -43,22 +56,13 @@ export function App() {
           <Journey />
           <p className="hero-footnote">{t.heroNote}</p>
         </section>
-        <aside className="safety-notice"><span className="safety-icon" aria-hidden="true">✓</span><div><strong>{t.simulated}</strong><p>{t.safety}</p></div><span className="benchmark">{t.benchmark}</span></aside>
-        <section className="idea" aria-labelledby="idea-title">
-          <div><p className="tiny-label">{t.lessonNumber}</p><h2 id="idea-title">{t.lessonTitle}</h2></div>
-          <p>{t.lessonBody}</p>
-        </section>
-        <div className="features">
-          {[
-            { symbol: '↳', title: t.featureOneTitle, body: t.featureOneBody },
-            { symbol: '⇄', title: t.featureTwoTitle, body: t.featureTwoBody },
-            { symbol: '◎', title: t.featureThreeTitle, body: t.featureThreeBody },
-          ].map((feature) => <article key={feature.symbol}><span className="feature-symbol" aria-hidden="true">{feature.symbol}</span><h3>{feature.title}</h3><p>{feature.body}</p></article>)}
-        </div>
-        <Playground />
+        }
+        <div hidden={!lab}><aside className="safety-notice"><span className="safety-icon" aria-hidden="true">✓</span><div><strong>{t.simulated}</strong><p>{t.safety}</p></div><span className="benchmark">{t.benchmark}</span></aside>
+        <Playground standalone={path === "/playground"} /></div>
+        {!lab && <LearnCenter path={path ?? "/learn"} />}
 
       </main>
       <footer className="site-footer wrap"><span>{t.brand}<span aria-hidden="true"> / </span>{t.footer}</span><span>{t.phase}</span></footer>
-    </>
+    </div>
   );
 }
