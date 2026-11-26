@@ -30,13 +30,10 @@ function Plot({ history, series }: PlotProps & { series: typeof traffic | typeof
   </figure>;
 }
 
-export function TrafficPlot({ history }: PlotProps) {
-  return <section className="plots primary-plot"><Plot history={history} series={traffic}/></section>;
-}
-
 export function PlotHistory({ history }: PlotProps) {
   const { t } = useI18n();
   return <section className="plots plot-history"><h3>{t.historyTitle}</h3>
+    <Plot history={history} series={traffic}/>
     <Plot history={history} series={queue}/>
     {history.length > 0 && <details><summary>{t.table}</summary><div className="table-scroll" tabIndex={0} role="region" aria-label={t.table}><table><caption>{t.table}</caption><thead><tr>{[t.seconds,...traffic.map(k=>t[k]),t.waiting].map(s=><th key={s}>{s}</th>)}</tr></thead><tbody>{history.map(b=><tr key={b.startMs}><th>{b.startMs/1000}–{b.endMs/1000}</th>{[...traffic,...queue].map(k=><td key={k}>{b[k]}</td>)}</tr>)}</tbody></table></div></details>}
   </section>;

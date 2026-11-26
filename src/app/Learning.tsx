@@ -29,7 +29,7 @@ export function Learning({ model, snapshot, applySpike, revealProtection }: Prop
     setStep(0);
     entry.current?.focus();
   }
-  const note = (key: Insight) => <p key={key}>{t[key]} {technical && t[`def${technicalTerm(key)}Tech`]}</p>;
+  const note = (key: Insight) => <p id={key === primary ? 'flow-insight' : undefined} key={key}>{t[key]} {technical && t[`def${technicalTerm(key)}Tech`]}</p>;
   const [primary = 'neutral', ...others] = insights(model);
   const p95 = snapshot.window?.p95Ms;
   return <aside className="learning" aria-label={t.tour}>

@@ -8,7 +8,8 @@ import type { PresetId } from '../engine';
 import { useI18n } from '../i18n/context';
 import { useSimulation } from './useSimulation';
 import { Learning } from './Learning';
-import { TrafficPlot, PlotHistory } from './Plots';
+import { RequestFlow } from './RequestFlow';
+import { PlotHistory } from './Plots';
 import { Configuration } from './Configuration';
 
 function Metrics({ title, rows, className = '' }: { className?: string; title: string; rows: [HelpKey,string|number][] }) {
@@ -70,7 +71,8 @@ export function Playground({ standalone = false }: { standalone?: boolean }) {
           ['active',snap.processing], ['admissionSlots',admissionSlots], ['waiting',snap.waiting],
           ['activeInstances',snap.effectiveInstanceCount], ['pending',Number(model.scaling.readyAt !== null)],
         ]}/>
-        <TrafficPlot history={snap.history}/>
+        <RequestFlow model={model} snapshot={snap} admissionSlots={admissionSlots}
+          interval={interval} running={status === 'running'}/>
         <Learning model={model} snapshot={snap} applySpike={()=>dispatch({type:'select',preset:'trafficSpike'})}
           revealProtection={revealProtection}/>
         <Metrics title={t.cumulative} rows={[
