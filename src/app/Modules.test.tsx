@@ -251,3 +251,47 @@ it.each([en, es])('offers three labeled reading destinations and a fictional exc
   follow(t.start);
   expect(screen.getByRole('article', { name: t.awaitWindow })).toBeVisible();
 });
+
+it('keeps the numeric family chip separate from its localized list and detail titles', () => {
+  open('/learn/http-status');
+  fireEvent.click(screen.getByRole('button', { name: 'Español' }));
+  for (const code of [101, 203, 226, 301, 429, 503]) {
+    const title = catalog.find(row => row.code === code)!.title.es;
+    const result = screen.getByRole('link', { name: code + ' ' + title });
+    const chip = within(result).getByText(String(code));
+    expect(chip).toHaveClass('status-code', 'family-' + Math.floor(code / 100));
+    expect(within(result).getByText(title)).toHaveClass('status-title');
+    fireEvent.click(result);
+    const heading = screen.getByRole('heading', { name: code + ' · ' + title });
+    expect(within(heading).getByText(String(code))).toHaveClass(...chip.classList);
+    expect(result).toHaveAttribute('aria-current', 'page');
+  }
+});
+
+it('closes localized technical help to its opener while a paused experiment retains its measurements', async () => {
+  open('/playground');
+  fireEvent.click(screen.getByRole('button', { name: 'Español' }));
+  fireEvent.change(screen.getByLabelText(es.depth), { target: { value: 'technical' } });
+  vi.useFakeTimers();
+  fireEvent.click(screen.getByRole('button', { name: es.play }));
+  act(() => vi.advanceTimersByTime(2000));
+  fireEvent.click(screen.getByRole('button', { name: es.pause }));
+  const historyTable = screen.getByRole('table', { hidden: true });
+  const before = historyTable.textContent;
+  const opener = screen.getByRole('button', { name: [es.help, es.processingTimeMs, es.configTitle].join(' · ') });
+  fireEvent.click(opener);
+  const panel = screen.getByRole('region', { name: es.processingTimeMs });
+  expect(panel.id).toBe(opener.getAttribute('aria-controls'));
+  expect(panel).toHaveTextContent(es.servicePolicy);
+  const close = within(panel).getByRole('button', { name: es.dismiss });
+  close.focus();
+  fireEvent.click(close);
+  expect(opener).toHaveFocus();
+  expect(opener).toHaveAttribute('aria-expanded', 'false');
+  expect(historyTable.textContent).toBe(before);
+  expect(location.pathname).toBe('/playground');
+  expect(screen.getByRole('button', { name: es.resume })).toBeVisible();
+  fireEvent.click(opener);
+  fireEvent.pointerDown(document.body, { pointerType: 'touch' });
+  expect(opener).toHaveAttribute('aria-expanded', 'false');
+});

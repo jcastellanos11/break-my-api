@@ -6,6 +6,10 @@ import { catalog, mdn, registry, simulatedCodes } from './statusCatalog';
 
 const familyKeys = ['f1', 'f2', 'f3', 'f4', 'f5'] as const;
 
+function CodeChip({ code }: { code: number }) {
+  return <span className={'status-code family-' + Math.floor(code / 100)}>{code}</span>;
+}
+
 const narrow = '(max-width: 47.99rem)';
 function phoneWidth() { return window.matchMedia?.(narrow).matches ?? false; }
 function subscribeWidth(update: () => void) {
@@ -50,7 +54,7 @@ export function Explorer() {
       </div>
       <p role="status">{t.results} · {matches.length}</p>
       <ul className="status-grid">{matches.map(row => <li key={row.code}>
-        <a href={statusPath(row.code)} aria-current={row === selected ? 'page' : undefined}><b>{row.code}</b> {row.title[locale]}</a>
+        <a href={statusPath(row.code)} aria-current={row === selected ? 'page' : undefined}><CodeChip code={row.code}/> <span className="status-title">{row.title[locale]}</span></a>
       </li>)}</ul>
       {matches.length === 0 && <div><p>{t.missing}</p><button onClick={() => {setQuery(''); setFamily(''); list.current?.querySelector('input')?.focus();}}>{t.clearFilters}</button></div>}
     </div>
@@ -58,7 +62,7 @@ export function Explorer() {
       <a className="return-link" href="/learn/http-status"><span aria-hidden="true">← </span>{t.backResults}</a>
       {selected ? <article className="reader detail">
       <p className="detail-label">{t.openDetail}</p>
-      <h2 tabIndex={-1} data-route-heading>{selected.code} · {selected.title[locale]}</h2>
+      <h2 tabIndex={-1} data-route-heading><CodeChip code={selected.code}/> · {selected.title[locale]}</h2>
       <p><span lang="en">{selected.phrase}</span> · {Math.floor(selected.code / 100)}xx · {t[familyKeys[Math.floor(selected.code / 100) - 1]!]}</p>
       <strong className="catalog-badge">{simulatedCodes.has(selected.code) ? t.simBadge : t.refBadge}</strong>
       <p>{selected.summary[locale]}</p>
