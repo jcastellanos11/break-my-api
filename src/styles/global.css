@@ -406,3 +406,14 @@ main.wrap:has(.lab):has(> div:not([hidden]) > .lab) { max-width:80rem; }
 
 .flow-node-title:has(.help-box) { flex-wrap:wrap; }
 .flow-node-title:has(.help-box) .help-wrap { flex:1 1 100%; }
+
+@media (min-width:64rem) { .learn-index { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (min-width:80rem) { .learn-index { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+.method-list a { align-items:flex-start; }
+.method-list b { flex:0 0 5.5ch; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.method-list span { min-width:0; line-height:1.45; }
+.method-detail pre { max-width:100%; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; padding:1rem; background:#f0f5ec; border-radius:.5rem; }
+.method-links { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; }
+.method-notes { grid-column:1/-1; max-width:70ch; }
+.method-notes h2 { font-size:1.35rem; margin-bottom:.5rem; }
+.method-notes p { margin-block:.75rem; }

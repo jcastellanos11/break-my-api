@@ -1,4 +1,5 @@
 import { searchable } from './searchable';
+import { Methods } from './Methods';
 import { useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { terms } from './insights';
@@ -45,9 +46,10 @@ export function LearnCenter({ path }: { path: string }) {
     { path: '/learn/fundamentals', title: t.fundamentals, summary: t.fundIntro },
     { path: '/learn/http-status', title: t.explorer, summary: t.statusIntro },
     { path: '/learn/glossary', title: t.gloss, summary: t.glossIntro },
+    { path: '/learn/http-methods', title: t.methods, summary: t.methodsIntro },
   ];
   const title = path === '/about' ? t.about : pages.find(page => page.path === path)?.title ?? t.learn;
-  const hasDetail = path === '/learn/http-status' && Boolean(new URLSearchParams(location.search).get('code'));
+  const hasDetail = (path === '/learn/http-status' && Boolean(new URLSearchParams(location.search).get('code'))) || (path === '/learn/http-methods' && Boolean(new URLSearchParams(location.search).get('method')));
 
   return <section className="learn-page">
     <h1 tabIndex={-1} data-route-heading={hasDetail ? undefined : true}>{title}</h1>
@@ -57,7 +59,7 @@ export function LearnCenter({ path }: { path: string }) {
     </> : <>
       {path !== '/learn' && <nav aria-label={t.learn}>{pages.map(page =>
         <a key={page.path} href={page.path} aria-current={path === page.path ? 'page' : undefined}>{page.title}</a>)}</nav>}
-      {path === '/learn/http-status' ? <Explorer /> : path === '/learn/glossary' ? <Glossary /> :
+      {path === '/learn/http-status' ? <Explorer /> : path === '/learn/http-methods' ? <Methods /> : path === '/learn/glossary' ? <Glossary /> :
         path === '/learn/fundamentals' ? <>
           <nav className="outline" aria-label={t.outline}>{chapters.map(([heading, body]) =>
             <a href={'#'+body} key={body}>{t[heading]}</a>)}</nav>

@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { MouseEvent } from 'react';
 
-const pages = ['/', '/playground', '/learn', '/learn/fundamentals', '/learn/http-status', '/learn/glossary', '/about'];
+const pages = ['/', '/playground', '/learn', '/learn/fundamentals', '/learn/http-status', '/learn/http-methods', '/learn/glossary', '/about'];
 function subscribe(update: () => void) {
   window.addEventListener('popstate', update);
   return () => window.removeEventListener('popstate', update);

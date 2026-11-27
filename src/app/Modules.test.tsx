@@ -295,3 +295,42 @@ it('closes localized technical help to its opener while a paused experiment reta
   fireEvent.pointerDown(document.body, { pointerType: 'touch' });
   expect(opener).toHaveAttribute('aria-expanded', 'false');
 });
+
+it('opens shareable HTTP method details in both locales and preserves selected method on browser traversal', async () => {
+  for (const t of [en, es]) {
+    open('/learn/http-methods?method=PATCH');
+    if (t === es) fireEvent.click(screen.getByRole('button', { name: 'Español' }));
+    expect(screen.getByRole('heading', { name: 'PATCH' })).toBeVisible();
+    expect(screen.getByText(t.methodIllustrative)).toBeVisible();
+    expect(screen.getByRole('link', { name: t.methodsBack })).toHaveAttribute('href', '/learn/http-methods');
+    history.replaceState({}, '', '/learn');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    history.pushState({}, '', '/learn/http-methods?method=PATCH');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(screen.getByRole('heading', { name: 'PATCH' })).toBeVisible();
+  }
+});
+
+it('offers all nine methods, translated examples and only existing status links', () => {
+  for (const t of [en, es]) {
+    open('/learn/http-methods');
+    if (t === es) fireEvent.click(screen.getByRole('button', { name: 'Español' }));
+    for (const method of ['GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS','CONNECT','TRACE']) {
+      follow(method);
+      expect(screen.getByRole('heading', { name: method })).toBeVisible();
+      expect(screen.getByText(t.methodIllustrative)).toBeVisible();
+      expect(screen.getByText(t.methodTechnical)).toBeVisible();
+      for (const link of document.querySelectorAll<HTMLAnchorElement>('.method-links a[href^="/learn/http-status"]')) {
+        expect(catalog.some(code => Number(new URL(link.href).searchParams.get('code')) === code.code)).toBe(true);
+      }
+      follow(t.methodsBack);
+    }
+  }
+});
+
+it('adds HTTP Methods as a distinct Learn destination', () => {
+  open('/learn');
+  expect(screen.getByRole('link', { name: en.methods })).toHaveAttribute('href', '/learn/http-methods');
+  follow(en.methods);
+  expect(screen.getByRole('heading', { name: en.methods })).toBeVisible();
+});
